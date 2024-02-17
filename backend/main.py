@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,6 +18,15 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 USERS = {}
 
 
@@ -51,9 +61,10 @@ async def login(data: dict):
         curr = conn.cursor()
         curr.execute("""SELECT id FROM user WHERE email = ? AND password = ?""",
                      (data["email"], data["password"]))
-        if not curr.fetchall():
+        result = curr.fetchall()
+        if not result:
             return {"message": "error", "details": "Incorrect credentials"}
-        return {"message": "OK"}
+        return {"message": "OK", "user_id": result[0][0]}
 
 
 @app.post("/user/register")
@@ -67,12 +78,52 @@ async def register(data: dict):
         if curr.fetchall()[0][0] > 0:
             return {"message": "error", "details": "User already exists"}
 
-        curr.execute("""INSERT INTO user(username, email, password, full_name) VALUES (?, ?, ?, ?)""",
-                     (data["username"], data["email"], data["password"], data["full_name"]))
+        curr.execute("""INSERT INTO user(username, email, password, full_name, birth_date) 
+                            VALUES (?, ?, ?, ?, ?)""",
+                     (data["username"], data["email"], data["password"], data["full_name"],
+                      data["birth_date"]))
         conn.commit()
         if not curr.lastrowid:
             return {"message": "error", "details": "Internal server error"}
         return {"message": "OK", "user_id": curr.lastrowid}
+
+
+@app.post("/user/follow")
+async def register(data: dict):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
+
+        curr.execute("""SELECT COUNT(*) FROM user WHERE id IN (?, ?)""",
+                     (data["user_id"], data["to_user_id"]))
+
+        if curr.fetchall()[0][0] != 2:
+            return {"message": "error", "details": "User(s) do not exist"}
+
+        curr.execute("""INSERT INTO follow_relations(from_user, to_user) VALUES (?, ?)""",
+                     (data["user_id"], data["to_user_id"]))
+        conn.commit()
+        if not curr.lastrowid:
+            return {"message": "error", "details": "Internal server error"}
+        return {"message": "OK"}
+
+
+@app.post("/post/create")
+async def register(data: dict):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
+
+        curr.execute("""SELECT COUNT(*) FROM user WHERE id = ?""",
+                     (data["user_id"],))
+
+        if curr.fetchall()[0][0] == 0:
+            return {"message": "error", "details": "User(s) do not exist"}
+
+        curr.execute("""INSERT INTO posts(user_id, text, img) VALUES (?, ?, ?)""",
+                     (data["user_id"], data.get("text"), data.get('img')))
+        conn.commit()
+        if not curr.lastrowid:
+            return {"message": "error", "details": "Internal server error"}
+        return {"message": "OK", "post_id": curr.lastrowid}
 
 
 if __name__ == "__main__":
