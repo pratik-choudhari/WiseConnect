@@ -7,8 +7,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import superagent from "superagent";
 import { backendAPI } from "../utils/constants";
 import { useRouter } from "next/router";
+import { useIsAuth } from "../hooks/useIsAuth";
 
 export default function Register() {
+  useIsAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [birthday, setBirthday] = useState<Date | null>(new Date());

@@ -5,8 +5,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import superagent from "superagent";
 import { backendAPI } from "../utils/constants";
 import { useRouter } from "next/router";
+import { useIsAuth } from "../hooks/useIsAuth";
 
 export default function Login() {
+  useIsAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const formik = useFormik({
