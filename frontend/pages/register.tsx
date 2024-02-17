@@ -3,8 +3,14 @@ import { DateInput } from "@mantine/dates";
 import { Register as RegisterIllustration } from "../illustrations/Register";
 import { useFormik } from "formik";
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import superagent from "superagent";
+import { backendAPI } from "../utils/constants";
+import { useRouter } from "next/router";
 
 export default function Register() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [birthday, setBirthday] = useState<Date | null>(new Date());
 
   const formik = useFormik({
@@ -17,7 +23,6 @@ export default function Register() {
     },
     onSubmit: (values, { setErrors }) => {
       const { password, confirmPassword } = values;
-      //   const { birthday } = values;
       const yyyy = birthday!.getFullYear() + "";
       let mm = birthday!.getMonth() + 1 + "";
       let dd = birthday!.getDate() + "";
@@ -25,7 +30,7 @@ export default function Register() {
       if (Number(dd) < 10) dd = "0" + dd;
       if (Number(mm) < 10) mm = "0" + mm;
 
-      const formattedBirthday = dd + "/" + mm + "/" + yyyy;
+      const formattedBirthday = dd + "-" + mm + "-" + yyyy;
 
       if (confirmPassword !== password) {
         setErrors({
@@ -35,8 +40,48 @@ export default function Register() {
         return;
       }
 
-      console.log(formattedBirthday);
-      console.log(values);
+      console.log({ ...values, birthday: formattedBirthday });
+      mutation.mutate({ ...values, birthday: formattedBirthday });
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: {
+      email: string;
+      username: string;
+      password: string;
+      fullname: string;
+      birthday: string;
+    }) => {
+      const { email, username, fullname, password, birthday } = data;
+
+      return superagent
+        .post(`${backendAPI}/user/register`)
+        .send({
+          email,
+          password,
+          username,
+          full_name: fullname,
+          birth_date: birthday,
+        })
+        .set("Accept", "application/json")
+        .then((res) => res.body)
+        .catch((error) => error.response.body);
+    },
+    onSuccess: (data) => {
+      // success
+      if (data.message === "OK") {
+        localStorage.setItem("userId", data.user_id);
+        // cache it
+        queryClient.setQueryData(["UserQuery", { id: 1 }], data.user);
+        router.push("/");
+      }
+      // error
+      if (data.message === "error") {
+        formik.setErrors({
+          email: "Could not create an user with this email. Please try again",
+        });
+      }
     },
   });
 

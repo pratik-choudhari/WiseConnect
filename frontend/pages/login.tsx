@@ -1,8 +1,14 @@
 import { Button, Flex, Input, PasswordInput, Stack, Text } from "@mantine/core";
 import { useFormik } from "formik";
 import { Login as LoginIllustration } from "../illustrations/Login";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import superagent from "superagent";
+import { backendAPI } from "../utils/constants";
+import { useRouter } from "next/router";
 
 export default function Login() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const formik = useFormik({
     initialValues: {
       email: "",
@@ -10,6 +16,39 @@ export default function Login() {
     },
     onSubmit: (values) => {
       console.log(values);
+      mutation.mutate(values);
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: { email: string; password: string }) => {
+      const { email, password } = data;
+
+      return superagent
+        .post(`${backendAPI}/user/login`)
+        .send({
+          email,
+          password,
+        })
+        .set("Accept", "application/json")
+        .then((res) => res.body)
+        .catch((error) => error.response.body);
+    },
+    onSuccess: (data) => {
+      // success
+      if (data.message === "OK") {
+        localStorage.setItem("userId", data.user_id);
+        // cache it
+        queryClient.setQueryData(["UserQuery", { id: 1 }], data.user);
+        router.push("/");
+      }
+      // error
+      if (data.message === "error") {
+        formik.setErrors({
+          email: "Invalid email",
+          password: "Invalid password",
+        });
+      }
     },
   });
 
