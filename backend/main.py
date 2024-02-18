@@ -152,17 +152,25 @@ async def pfeed(user_id: int, offset: int, tab: int):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
 
+        # following posts
         if tab == 1:
             curr.execute("""SELECT p.id AS post_id, user_id, text, img, u.username, u.full_name, fraud_detected, fraud_type
                                 FROM posts p INNER JOIN main.user u ON u.id = p.user_id
                                 INNER JOIN main.follow_relations fr ON fr.from_user = ? AND u.id = fr.to_user
                                 ORDER BY p.created_date DESC LIMIT ?, 10""",
                          (user_id, offset))
+        # recommended posts
+        elif tab == 2:
+            curr.execute("""SELECT p.id AS post_id, user_id, text, img, u.username, u.full_name, fraud_detected, fraud_type
+                                FROM posts p INNER JOIN main.user u on u.id = p.user_id
+                                ORDER BY p.created_date DESC LIMIT ?, 10""",
+                         (offset,))
+        # trending
         else:
             curr.execute("""SELECT p.id AS post_id, user_id, text, img, u.username, u.full_name, fraud_detected, fraud_type
-                                FROM posts p INNER JOIN main.user u on u.id = p.user_id AND u.id <> ?
-                                ORDER BY p.created_date DESC LIMIT ?, 10""",
-                         (user_id, offset))
+                                            FROM posts p INNER JOIN main.user u on u.id = p.user_id
+                                            ORDER BY p.likes DESC LIMIT ?, 10""",
+                         (offset,))
 
         result = curr.fetchall()
         if not result:
