@@ -1,23 +1,16 @@
 import pickle
 import random
+from sqlite3 import Connection
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.pipeline import Pipeline
+from backend.config import SQL_DB_FILE
 
-with open(r"C:\Users\prati\Downloads\MultinomialNB.pkl", "rb") as fp:
-    model = pickle.load(fp)
+with open(r"./notebooks/LogisticReg.pkl", "rb") as fp:
+    vectorizer, model = pickle.load(fp)
 
-clf = Pipeline([
-    ('vectorizer', CountVectorizer()),
-    ('nb', model)
-])
 
-emails = [
-    'there a virus in you computer, install this software now',
-]
+def detect_fraud(msg: str, post_id: str):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
 
-def detect_fraud(msg: str):
-    print(msg)
-    return random.choice([True, False])
-# clf.fit(emails, [1])
-# print(clf.predict(emails))
+        result = model.predict(vectorizer.transform([msg]))[0]
+        curr.execute(f"""UPDATE posts SET fraud_detected={result} WHERE id = {int(post_id)}""")

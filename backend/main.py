@@ -143,7 +143,7 @@ async def pcreate(data: dict, background_tasks: BackgroundTasks):
 
         if not curr.lastrowid:
             return {"message": "error", "details": "Internal server error"}
-        background_tasks.add_task(detect_fraud, str(curr.lastrowid))
+        background_tasks.add_task(detect_fraud, msg=data.get("text", ""), post_id=str(curr.lastrowid))
         return {"message": "OK", "post_id": curr.lastrowid}
 
 
