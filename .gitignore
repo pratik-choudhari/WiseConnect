@@ -8,3 +8,5 @@
 *.db
 venv/*
 __pycache__/
+
+*.csv
