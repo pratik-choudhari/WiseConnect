@@ -1,4 +1,11 @@
-import { Button, Flex, Modal, TextInput, Textarea } from "@mantine/core";
+import {
+  Button,
+  Flex,
+  Modal,
+  Select,
+  TextInput,
+  Textarea,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useUserId } from "../stores/useUserId";
 import superagent from "superagent";
@@ -90,7 +97,7 @@ export function CreatePost({ type }: { type: "Input" | "Button" }) {
           Create Post
         </Button>
       )}
-      <Modal opened={opened} onClose={close} title="Create Post">
+      <Modal opened={opened} onClose={close} title="Create Post" size={"lg"}>
         <form onSubmit={formik.handleSubmit}>
           <Textarea
             resize="vertical"
@@ -101,6 +108,15 @@ export function CreatePost({ type }: { type: "Input" | "Button" }) {
             value={formik.values.text}
             onChange={formik.handleChange}
           />
+
+          <Select
+            mt={"md"}
+            label="Privacy Setting"
+            placeholder="Pick value"
+            variant="filled"
+            data={["Private", "Public", "Only for my followers"]}
+          />
+
           <Flex mt={"md"} style={{ width: "100%", justifyContent: "flex-end" }}>
             <Button type="submit">Post</Button>
           </Flex>

@@ -10,6 +10,7 @@ import {
   Button,
   Alert,
   Modal,
+  Textarea,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -24,8 +25,15 @@ import Linkify from "linkify-react";
 import { useEffect } from "react";
 import { useState } from "react";
 import { useOutOfFocus } from "../stores/useOutOfFocus";
+import { useMutation } from "@tanstack/react-query";
+import router from "next/router";
+import superagent from "superagent";
+import { backendAPI } from "../utils/constants";
+import { useUserId } from "../stores/useUserId";
+import { useFormik } from "formik";
 
 type PostCardProps = {
+  postId: number;
   text: string;
   username: string;
   fullname: string;
@@ -33,13 +41,30 @@ type PostCardProps = {
   fraudType: 1 | 2 | null;
 };
 
+const images = [
+  "https://vectorified.com/images/gender-neutral-icon-18.png",
+  "https://vectorified.com/images/gender-neutral-user-icon-17.jpg",
+  "https://www.pngkey.com/png/detail/523-5230875_this-icon-for-gender-neutral-user-is-an.png",
+  "https://media.istockphoto.com/id/1130884625/vector/user-member-vector-icon-for-ui-user-interface-or-profile-face-avatar-app-in-circle-design.jpg?s=612x612&w=0&k=20&c=1ky-gNHiS2iyLsUPQkxAtPBWH1BZt0PKBB1WBtxQJRE=",
+];
+
+function randomIntFromInterval(min: number, max: number) {
+  // min and max included
+  const rn = Math.floor(Math.random() * (max - min + 1) + min);
+  console.log("random", rn);
+  return rn;
+}
+
 export function PostCard({
+  postId,
   text,
   username,
   fullname,
   fraud,
   fraudType,
 }: PostCardProps) {
+  console.log(postId);
+  const userId = useUserId((state) => state.userId);
   const outOfFocus = useOutOfFocus((state) => state.outOfFocus);
   const setOutOfFocus = useOutOfFocus((state) => state.setOutOfFocus);
   const [opened, { open, close }] = useDisclosure(false);
@@ -59,6 +84,52 @@ export function PostCard({
       }
     },
   };
+
+  const reportPostMutation = useMutation({
+    mutationFn: (data: {
+      postId: number;
+      userId: number;
+      details: string | null;
+    }) => {
+      const { userId, postId, details } = data;
+
+      return superagent
+        .post(`${backendAPI}/post/report`)
+        .send({
+          user_id: userId,
+          post_id: postId,
+          details,
+          flag_type: null,
+        })
+        .set("Accept", "application/json")
+        .then((res) => res.body)
+        .catch((error) => error.response.body);
+    },
+    onSuccess: (data) => {
+      // success
+      if (data.message === "OK") {
+        console.log("report works");
+      }
+      // error
+      if (data.message === "error") {
+        console.log("report fail");
+      }
+    },
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      details: "",
+    },
+    onSubmit: (values) => {
+      const newUserId = userId as number;
+      reportPostMutation.mutate({
+        postId,
+        userId: newUserId,
+        details: values.details.length === 0 ? null : values.details,
+      });
+    },
+  });
 
   //   // User has switched back to the tab
   //   const onFocus = () => {
@@ -87,7 +158,7 @@ export function PostCard({
             <img
               width="50px"
               height="50px"
-              src="https://media.istockphoto.com/id/1130884625/vector/user-member-vector-icon-for-ui-user-interface-or-profile-face-avatar-app-in-circle-design.jpg?s=612x612&w=0&k=20&c=1ky-gNHiS2iyLsUPQkxAtPBWH1BZt0PKBB1WBtxQJRE="
+              src={images[randomIntFromInterval(0, 3)]}
             />
             <Stack ml="sm">
               <Text size="md" fw={400}>
@@ -112,6 +183,11 @@ export function PostCard({
                 leftSection={
                   <IconReport style={{ width: rem(14), height: rem(14) }} />
                 }
+                onClick={() => {
+                  if (userId) {
+                    open();
+                  }
+                }}
               >
                 Report
               </Menu.Item>
@@ -130,7 +206,12 @@ export function PostCard({
 
       {fraud && fraudType === 1 ? (
         <div
-          style={{ color: "#C0B820", display: "flex", alignItems: "center" }}
+          style={{
+            color: "#FFC907",
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
         >
           <IconAlertCircleFilled size={25} />
           <Text ml={"xs"} size="sm">
@@ -176,6 +257,23 @@ export function PostCard({
           </Button>
         </Group>
       </Card.Section>
+
+      <Modal opened={opened} onClose={close} title="Report Post">
+        <form onSubmit={formik.handleSubmit}>
+          <Textarea
+            label="Please provide details (optional)"
+            placeholder="more details..."
+            variant="filled"
+            name="details"
+            id="details"
+            value={formik.values.details}
+            onChange={formik.handleChange}
+          />
+          <Button type="submit" mt="md">
+            Report
+          </Button>
+        </form>
+      </Modal>
     </Card>
   );
 }

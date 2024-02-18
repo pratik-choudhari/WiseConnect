@@ -5,6 +5,7 @@ import { RightColumn } from "../components/layout/RightColumn";
 import { IndexLeftColumn } from "../components/IndexLeftColumn";
 import { GetUserId } from "../components/GetUserId";
 import { IndexMiddleColumn } from "../components/IndexMiddleColumn";
+import { IndexRightColumn } from "../components/IndexRightColumn";
 
 export default function IndexPage() {
   return (
@@ -18,7 +19,9 @@ export default function IndexPage() {
           <IndexMiddleColumn />
         </MainContentColumn>
 
-        <RightColumn>Right</RightColumn>
+        <RightColumn>
+          <IndexRightColumn />
+        </RightColumn>
       </MainGridLayout>
     </GetUserId>
   );

@@ -6,7 +6,7 @@ import { useUserId } from "../stores/useUserId";
 import { useState } from "react";
 import { Button, Flex } from "@mantine/core";
 
-export function ForYouPosts() {
+export function FollowingPosts() {
   const userId = useUserId((state) => state.userId);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -16,7 +16,7 @@ export function ForYouPosts() {
     enabled: userId && hasMore ? true : false,
     queryFn: () =>
       superagent
-        .get(`${backendAPI}/post/feed?user_id=6&offset=${offset}&tab=2`)
+        .get(`${backendAPI}/post/feed?user_id=${userId}&offset=${offset}&tab=2`)
         .set("Accept", "application/json")
         .set("ngrok-skip-browser-warning", "69420")
         .then((res) => res.body.posts),
@@ -26,7 +26,7 @@ export function ForYouPosts() {
     "URL",
     `${backendAPI}/post/feed?user_id=${userId}&offset=${offset}&tab=2`
   );
-  console.log("dataPosts: ", data);
+  console.log("followingPosts: ", data);
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import superagent from "superagent";
 import { useUserId } from "../stores/useUserId";
@@ -7,8 +7,10 @@ import { Flex, Tabs, rem, Text } from "@mantine/core";
 import { IconSocial, IconUser, IconTrendingUp } from "@tabler/icons-react";
 import { CreatePost } from "./CreatePost";
 import { ForYouPosts } from "./ForYouPosts";
+import { FollowingPosts } from "./FollowingPosts";
 
 export function IndexMiddleColumn() {
+  const queryClient = useQueryClient();
   const router = useRouter();
   const userId = useUserId((state) => state.userId);
 
@@ -26,7 +28,12 @@ export function IndexMiddleColumn() {
   const iconStyle = { width: rem(12), height: rem(12) };
 
   return (
-    <Flex mt={"13px"} p={"1em"} direction={"column"} style={{ height: "100%" }}>
+    <Flex
+      mt={"5.5px"}
+      p={"1em"}
+      direction={"column"}
+      style={{ height: "100%" }}
+    >
       <Text size="xl" fw={700}>
         Feed
       </Text>
@@ -35,7 +42,12 @@ export function IndexMiddleColumn() {
         <CreatePost type="Input" />
       </div>
 
-      <Tabs defaultValue={!data ? "trending" : "following"}>
+      <Tabs
+        defaultValue={!data ? "trending" : "following"}
+        onChange={() => {
+          queryClient.invalidateQueries({ queryKey: ["PostsQuery"] });
+        }}
+      >
         <Tabs.List>
           {!data ? null : (
             <Tabs.Tab
@@ -63,7 +75,7 @@ export function IndexMiddleColumn() {
 
         {!data ? null : (
           <Tabs.Panel value="following" p={"md"}>
-            Posts for FOLLOWING
+            <FollowingPosts />
           </Tabs.Panel>
         )}
 
@@ -74,7 +86,7 @@ export function IndexMiddleColumn() {
         )}
 
         <Tabs.Panel value="trending" p={"md"}>
-          Posts for Trending
+          <ForYouPosts />
         </Tabs.Panel>
       </Tabs>
     </Flex>
