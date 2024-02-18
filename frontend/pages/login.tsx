@@ -1,11 +1,19 @@
-import { Button, Flex, Input, PasswordInput, Stack, Text } from "@mantine/core";
+import {
+  Anchor,
+  Button,
+  Flex,
+  Input,
+  PasswordInput,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useFormik } from "formik";
 import { Login as LoginIllustration } from "../illustrations/Login";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import superagent from "superagent";
 import { backendAPI } from "../utils/constants";
 import { useRouter } from "next/router";
-import { useIsAuth } from "../hooks/useIsAuth";
+import NextLink from "next/link";
 
 export default function Login() {
   // useIsAuth();
@@ -103,6 +111,13 @@ export default function Login() {
               />
 
               <Button type="submit">Login</Button>
+
+              <Flex justify={"center"}>
+                New here?
+                <NextLink href="/register" style={{ marginLeft: "0.5em" }}>
+                  Register now!
+                </NextLink>
+              </Flex>
             </Stack>
           </form>
         </Stack>

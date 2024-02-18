@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import superagent from "superagent";
 import { backendAPI } from "../utils/constants";
 import { useRouter } from "next/router";
-import { useIsAuth } from "../hooks/useIsAuth";
+import NextLink from "next/link";
 
 export default function Register() {
   // useIsAuth();
@@ -181,6 +181,13 @@ export default function Register() {
                 }
               />
               <Button type="submit">Register</Button>
+
+              <Flex justify={"center"}>
+                Already have an account?
+                <NextLink href="/login" style={{ marginLeft: "0.5em" }}>
+                  Log in
+                </NextLink>
+              </Flex>
             </Stack>
           </form>
         </Stack>

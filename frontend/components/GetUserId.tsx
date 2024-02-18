@@ -17,6 +17,7 @@ export function GetUserId({ children }: { children: React.ReactNode }) {
   if (userId) {
     body = children;
   } else if (!userId && checked) {
+    console.log("this happened");
     body = children;
   }
 

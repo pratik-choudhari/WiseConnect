@@ -11,6 +11,7 @@ import superagent from "superagent";
 import { backendAPI } from "../utils/constants";
 import { useUserId } from "../stores/useUserId";
 import { useRouter } from "next/router";
+import { CreatePost } from "./CreatePost";
 
 export function IndexLeftColumn() {
   const router = useRouter();
@@ -96,17 +97,7 @@ export function IndexLeftColumn() {
             Profile
           </Button>
 
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => {
-              if (!data) {
-                router.push("/login");
-              }
-            }}
-          >
-            Create Post
-          </Button>
+          <CreatePost type="Button" />
         </Stack>
       </Stack>
 
