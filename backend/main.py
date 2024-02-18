@@ -59,12 +59,15 @@ async def root():
 async def login(data: dict):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
-        curr.execute("""SELECT id FROM user WHERE email = ? AND password = ?""",
+        curr.execute("""SELECT id, username, email, full_name FROM user WHERE email = ? AND password = ?""",
                      (data["email"], data["password"]))
         result = curr.fetchall()
         if not result:
             return {"message": "error", "details": "Incorrect credentials"}
-        return {"message": "OK", "user_id": result[0][0]}
+
+        values = result[0]
+        keys = [i[0] for i in curr.description]
+        return {"message": "OK", "user_id": values[0], "user": dict(zip(keys, values))}
 
 
 @app.post("/user/register")
@@ -85,7 +88,22 @@ async def register(data: dict):
         conn.commit()
         if not curr.lastrowid:
             return {"message": "error", "details": "Internal server error"}
-        return {"message": "OK", "user_id": curr.lastrowid}
+        return {"message": "OK", "user_id": curr.lastrowid, "user": {"username": data["username"],
+                                                                     "email": data["email"],
+                                                                     "full_name": data["full_name"]}}
+
+
+@app.get("/user/info")
+async def login(user_id: int):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
+        curr.execute("""SELECT username, email, full_name FROM user WHERE id = ?""", (user_id,))
+        result = curr.fetchall()
+        if not result:
+            return {"message": "error", "details": "Invalid user"}
+        values = result[0]
+        keys = [i[0] for i in curr.description]
+        return {"message": "OK", "user": dict(zip(keys, values))}
 
 
 @app.post("/user/follow")
@@ -124,6 +142,33 @@ async def register(data: dict):
         if not curr.lastrowid:
             return {"message": "error", "details": "Internal server error"}
         return {"message": "OK", "post_id": curr.lastrowid}
+
+
+@app.get("/post/feed")
+async def register(user_id: int, offset: int, tab: int):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
+
+        if tab == 1:
+            curr.execute("""SELECT user_id, text, img, username, full_name
+                                FROM posts p INNER JOIN main.user u ON u.id = p.user_id
+                                INNER JOIN main.follow_relations fr ON fr.from_user = ? AND u.id = fr.to_user
+                                ORDER BY p.created_date LIMIT ?, 10""",
+                         (user_id, offset))
+        else:
+            curr.execute("""SELECT user_id, text, img, username, full_name 
+                                FROM posts p INNER JOIN main.user u on u.id = p.user_id AND u.id <> ?
+                                ORDER BY p.created_date LIMIT ?, 10""",
+                         (user_id, offset))
+
+        result = curr.fetchall()
+        if not result:
+            return {"message": "OK", "posts": []}
+
+        headers = [i[0] for i in curr.description]
+    posts = [dict(zip(headers, obj)) for obj in result]
+
+    return {"message": "OK", "posts": posts}
 
 
 if __name__ == "__main__":

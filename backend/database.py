@@ -19,6 +19,7 @@ def init_db():
                             ); """
 
     follow_relations_table = """ CREATE TABLE IF NOT EXISTS follow_relations (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 from_user INTEGER,
                                 to_user INTEGER,
                                 FOREIGN KEY(from_user) REFERENCES user(id),
@@ -26,9 +27,13 @@ def init_db():
                             ); """
 
     posts_table = """ CREATE TABLE IF NOT EXISTS posts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER,
                     text text,
                     img text,
+                    likes INTEGER DEFAULT 0,
+                    comments INTEGER DEFAULT 0,
+                    created_date date DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(user_id) REFERENCES user(id)
                 ); """
     try:
