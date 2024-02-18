@@ -153,13 +153,13 @@ async def pfeed(user_id: int, offset: int, tab: int):
         curr = conn.cursor()
 
         if tab == 1:
-            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected
+            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected, fraud_type
                                 FROM posts p INNER JOIN main.user u ON u.id = p.user_id
                                 INNER JOIN main.follow_relations fr ON fr.from_user = ? AND u.id = fr.to_user
                                 ORDER BY p.created_date LIMIT ?, 10""",
                          (user_id, offset))
         else:
-            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected
+            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected, fraud_type
                                 FROM posts p INNER JOIN main.user u on u.id = p.user_id AND u.id <> ?
                                 ORDER BY p.created_date LIMIT ?, 10""",
                          (user_id, offset))
@@ -197,6 +197,9 @@ async def preport(data: dict):
 async def plreport(data: dict):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
+
+        if not data["url"].startswith("http"):
+            data["url"] = "http://" + data["url"]
 
         curr.execute("""INSERT INTO flagged_links(post_id, flagged_by_user, flag_type, details, url) 
                             VALUES (?, ?, ?, ?, ?)""",
