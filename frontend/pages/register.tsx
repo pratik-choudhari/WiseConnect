@@ -10,7 +10,7 @@ import { useRouter } from "next/router";
 import { useIsAuth } from "../hooks/useIsAuth";
 
 export default function Register() {
-  useIsAuth();
+  // useIsAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [birthday, setBirthday] = useState<Date | null>(new Date());

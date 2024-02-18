@@ -3,14 +3,20 @@ import { useEffect } from "react";
 
 export const useIsAuth = () => {
   const router = useRouter();
+  let userId: string | null;
+  if (typeof window !== "undefined") {
+    console.log("this runs");
+    // Perform localStorage action
+    userId = localStorage.getItem("key");
+  }
   useEffect(() => {
-    console.log("localStorage: ", localStorage.getItem("userId"));
-    if (!localStorage.getItem("userId")) {
+    console.log("localStorage: ", userId);
+    if (!userId) {
       router.push("/login");
     }
 
-    if (localStorage.getItem("userId")) {
+    if (userId) {
       router.push("/");
     }
-  }, [router]);
+  }, [router, userId!]);
 };

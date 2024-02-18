@@ -9,7 +9,6 @@ export function RightColumn({ children }: { children: React.ReactNode }) {
           overflow: "hidden",
           height: "100%",
           width: "325px",
-          border: "2px blue solid",
         }}
       >
         {children}

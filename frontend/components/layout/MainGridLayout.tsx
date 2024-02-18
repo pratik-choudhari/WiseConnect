@@ -8,7 +8,6 @@ export function MainGridLayout({ children }: { children: React.ReactNode }) {
         paddingRight: "4rem",
         display: "flex",
         alignItems: "center",
-        border: "2px red solid",
       }}
     >
       <div

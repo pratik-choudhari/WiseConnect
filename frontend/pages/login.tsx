@@ -8,7 +8,7 @@ import { useRouter } from "next/router";
 import { useIsAuth } from "../hooks/useIsAuth";
 
 export default function Login() {
-  useIsAuth();
+  // useIsAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const formik = useFormik({
