@@ -7,6 +7,8 @@ from backend.config import SQL_DB_FILE
 def init_db():
     """ create a database connection to a SQLite database """
     conn = sqlite3.connect(SQL_DB_FILE)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    conn.commit()
 
     sql_create_users_table = """ CREATE TABLE IF NOT EXISTS user (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,13 +36,40 @@ def init_db():
                     likes INTEGER DEFAULT 0,
                     comments INTEGER DEFAULT 0,
                     created_date date DEFAULT CURRENT_TIMESTAMP,
+                    fraud_detected BOOLEAN,
+                    fraud_type TINYINT,
                     FOREIGN KEY(user_id) REFERENCES user(id)
                 ); """
+
+    reports_table = """ CREATE TABLE IF NOT EXISTS posts_reports (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        post_id INTEGER,
+                        flagged_by_user INTEGER,
+                        flag_type TINYINT,
+                        details TEXT,
+                        FOREIGN KEY(post_id) REFERENCES posts(id),
+                        FOREIGN KEY(flagged_by_user) REFERENCES user(id)
+                    ); """
+
+    links_table = """ CREATE TABLE IF NOT EXISTS flagged_links (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            post_id INTEGER,
+                            flagged_by_user INTEGER,
+                            flag_type TINYINT,
+                            details TEXT,
+                            url TEXT,
+                            FOREIGN KEY(post_id) REFERENCES posts(id),
+                            FOREIGN KEY(flagged_by_user) REFERENCES user(id)
+                        ); """
+
+
     try:
         c = conn.cursor()
         c.execute(sql_create_users_table)
         c.execute(posts_table)
         c.execute(follow_relations_table)
+        c.execute(reports_table)
+        c.execute(links_table)
         conn.commit()
     except Error as e:
         print(e)

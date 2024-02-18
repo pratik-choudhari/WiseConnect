@@ -2,7 +2,7 @@ from sqlite3 import Connection
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from backend.config import SQL_DB_FILE
 from backend.database import init_db
+from backend.inference import detect_fraud
 
 
 @asynccontextmanager
@@ -94,7 +95,7 @@ async def register(data: dict):
 
 
 @app.get("/user/info")
-async def login(user_id: int):
+async def info(user_id: int):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
         curr.execute("""SELECT username, email, full_name FROM user WHERE id = ?""", (user_id,))
@@ -107,7 +108,7 @@ async def login(user_id: int):
 
 
 @app.post("/user/follow")
-async def register(data: dict):
+async def follow(data: dict):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
 
@@ -126,7 +127,7 @@ async def register(data: dict):
 
 
 @app.post("/post/create")
-async def register(data: dict):
+async def pcreate(data: dict, background_tasks: BackgroundTasks):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
 
@@ -139,24 +140,26 @@ async def register(data: dict):
         curr.execute("""INSERT INTO posts(user_id, text, img) VALUES (?, ?, ?)""",
                      (data["user_id"], data.get("text"), data.get('img')))
         conn.commit()
+
         if not curr.lastrowid:
             return {"message": "error", "details": "Internal server error"}
+        background_tasks.add_task(detect_fraud, str(curr.lastrowid))
         return {"message": "OK", "post_id": curr.lastrowid}
 
 
 @app.get("/post/feed")
-async def register(user_id: int, offset: int, tab: int):
+async def pfeed(user_id: int, offset: int, tab: int):
     with Connection(SQL_DB_FILE) as conn:
         curr = conn.cursor()
 
         if tab == 1:
-            curr.execute("""SELECT user_id, text, img, username, full_name
+            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected
                                 FROM posts p INNER JOIN main.user u ON u.id = p.user_id
                                 INNER JOIN main.follow_relations fr ON fr.from_user = ? AND u.id = fr.to_user
                                 ORDER BY p.created_date LIMIT ?, 10""",
                          (user_id, offset))
         else:
-            curr.execute("""SELECT user_id, text, img, username, full_name 
+            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected
                                 FROM posts p INNER JOIN main.user u on u.id = p.user_id AND u.id <> ?
                                 ORDER BY p.created_date LIMIT ?, 10""",
                          (user_id, offset))
@@ -165,11 +168,44 @@ async def register(user_id: int, offset: int, tab: int):
         if not result:
             return {"message": "OK", "posts": []}
 
+        updated_result = []
+        for res in result:
+            res = list(res)
+            res[5] = bool(res[5])
+            updated_result.append(res)
         headers = [i[0] for i in curr.description]
-    posts = [dict(zip(headers, obj)) for obj in result]
+    posts = [dict(zip(headers, obj)) for obj in updated_result]
 
     return {"message": "OK", "posts": posts}
 
+
+@app.post("/post/report")
+async def preport(data: dict):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
+
+        curr.execute("""INSERT INTO posts_reports(post_id, flagged_by_user, flag_type, details) 
+                            VALUES (?, ?, ?, ?)""",
+                     (data["post_id"], data["user_id"], data['flag_type'], data.get('details')))
+        conn.commit()
+        if not curr.lastrowid:
+            return {"message": "error", "details": "Internal server error"}
+        return {"message": "OK"}
+
+
+@app.post("/post/link/report")
+async def plreport(data: dict):
+    with Connection(SQL_DB_FILE) as conn:
+        curr = conn.cursor()
+
+        curr.execute("""INSERT INTO flagged_links(post_id, flagged_by_user, flag_type, details, url) 
+                            VALUES (?, ?, ?, ?, ?)""",
+                     (data["post_id"], data["user_id"], data['flag_type'], data.get('details'),
+                      data["url"]))
+        conn.commit()
+        if not curr.lastrowid:
+            return {"message": "error", "details": "Internal server error"}
+        return {"message": "OK"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8081)
