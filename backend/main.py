@@ -153,15 +153,15 @@ async def pfeed(user_id: int, offset: int, tab: int):
         curr = conn.cursor()
 
         if tab == 1:
-            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected, fraud_type
+            curr.execute("""SELECT p.id AS post_id, user_id, text, img, u.username, u.full_name, fraud_detected, fraud_type
                                 FROM posts p INNER JOIN main.user u ON u.id = p.user_id
                                 INNER JOIN main.follow_relations fr ON fr.from_user = ? AND u.id = fr.to_user
-                                ORDER BY p.created_date LIMIT ?, 10""",
+                                ORDER BY p.created_date DESC LIMIT ?, 10""",
                          (user_id, offset))
         else:
-            curr.execute("""SELECT user_id, text, img, username, full_name, fraud_detected, fraud_type
+            curr.execute("""SELECT p.id AS post_id, user_id, text, img, u.username, u.full_name, fraud_detected, fraud_type
                                 FROM posts p INNER JOIN main.user u on u.id = p.user_id AND u.id <> ?
-                                ORDER BY p.created_date LIMIT ?, 10""",
+                                ORDER BY p.created_date DESC LIMIT ?, 10""",
                          (user_id, offset))
 
         result = curr.fetchall()
@@ -171,7 +171,7 @@ async def pfeed(user_id: int, offset: int, tab: int):
         updated_result = []
         for res in result:
             res = list(res)
-            res[5] = bool(res[5])
+            res[6] = bool(res[6])
             updated_result.append(res)
         headers = [i[0] for i in curr.description]
     posts = [dict(zip(headers, obj)) for obj in updated_result]
