@@ -35,5 +35,7 @@ def detect_fraud(msg: str, post_id: str):
                 return
 
         result = model.predict(vectorizer.transform([msg]))[0]
-        curr.execute(f"""UPDATE posts SET fraud_detected={result}, fraud_type=2 WHERE id = {int(post_id)}""")
+        fraud_type = 2 if result == 1 else 0
+        curr.execute(f"""UPDATE posts SET fraud_detected=?, fraud_type=? WHERE id = ?""",
+                     (int(result), fraud_type, int(post_id)))
         conn.commit()
