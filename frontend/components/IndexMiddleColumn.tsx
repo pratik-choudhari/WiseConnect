@@ -3,9 +3,10 @@ import { useRouter } from "next/router";
 import superagent from "superagent";
 import { useUserId } from "../stores/useUserId";
 import { backendAPI } from "../utils/constants";
-import { Flex, Tabs, rem, Text, Textarea } from "@mantine/core";
+import { Flex, Tabs, rem, Text } from "@mantine/core";
 import { IconSocial, IconUser, IconTrendingUp } from "@tabler/icons-react";
 import { CreatePost } from "./CreatePost";
+import { ForYouPosts } from "./ForYouPosts";
 
 export function IndexMiddleColumn() {
   const router = useRouter();
@@ -34,20 +35,24 @@ export function IndexMiddleColumn() {
         <CreatePost type="Input" />
       </div>
 
-      <Tabs defaultValue="following">
+      <Tabs defaultValue={!data ? "trending" : "following"}>
         <Tabs.List>
-          <Tabs.Tab
-            value="following"
-            leftSection={<IconSocial style={iconStyle} />}
-          >
-            Following
-          </Tabs.Tab>
-          <Tabs.Tab
-            value="for-you"
-            leftSection={<IconUser style={iconStyle} />}
-          >
-            For you
-          </Tabs.Tab>
+          {!data ? null : (
+            <Tabs.Tab
+              value="following"
+              leftSection={<IconSocial style={iconStyle} />}
+            >
+              Following
+            </Tabs.Tab>
+          )}
+          {!data ? null : (
+            <Tabs.Tab
+              value="for-you"
+              leftSection={<IconUser style={iconStyle} />}
+            >
+              For you
+            </Tabs.Tab>
+          )}
           <Tabs.Tab
             value="trending"
             leftSection={<IconTrendingUp style={iconStyle} />}
@@ -56,13 +61,17 @@ export function IndexMiddleColumn() {
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="following" p={"md"}>
-          Posts for FOLLOWING
-        </Tabs.Panel>
+        {!data ? null : (
+          <Tabs.Panel value="following" p={"md"}>
+            Posts for FOLLOWING
+          </Tabs.Panel>
+        )}
 
-        <Tabs.Panel value="for-you" p={"md"}>
-          Posts for FOR YOU
-        </Tabs.Panel>
+        {!data ? null : (
+          <Tabs.Panel value="for-you" p={"md"}>
+            <ForYouPosts />
+          </Tabs.Panel>
+        )}
 
         <Tabs.Panel value="trending" p={"md"}>
           Posts for Trending
