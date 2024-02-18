@@ -7,7 +7,7 @@ type UserInfoProps = {
 
 export function UserInfo({ username, fullname }: UserInfoProps) {
   return (
-    <Flex align={"center"} mb={"sm"}>
+    <Flex align={"center"}>
       <img
         width="70px"
         height="70px"
